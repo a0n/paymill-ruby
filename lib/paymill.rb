@@ -4,20 +4,21 @@ require "json"
 require "paymill/version"
 
 module Paymill
-  API_BASE    = "api.paymill.de"
+  API_BASE    = "api.paymill.com"
   API_VERSION = "v2"
+  ROOT_PATH   = File.dirname(__FILE__)
 
   @@api_key = nil
 
-  autoload :Base,         "paymill/base"
-  autoload :Client,       "paymill/client"
-  autoload :Offer,        "paymill/offer"
-  autoload :Payment,      "paymill/payment"
+  autoload :Base,             "paymill/base"
+  autoload :Client,           "paymill/client"
+  autoload :Offer,            "paymill/offer"
+  autoload :Payment,          "paymill/payment"
   autoload :Preauthorization, "paymill/preauthorization"
   autoload :Refund,           "paymill/refund"
-  autoload :Subscription, "paymill/subscription"
-  autoload :Transaction,  "paymill/transaction"
-  autoload :Webhook,      "paymill/webhook"
+  autoload :Subscription,     "paymill/subscription"
+  autoload :Transaction,      "paymill/transaction"
+  autoload :Webhook,          "paymill/webhook"
 
   module Operations
     autoload :All,    "paymill/operations/all"
@@ -27,65 +28,39 @@ module Paymill
     autoload :Delete, "paymill/operations/delete"
   end
 
-  class PaymillError < StandardError
+  module Request
+    autoload :Base,       "paymill/request/base"
+    autoload :Connection, "paymill/request/connection"
+    autoload :Info,       "paymill/request/info"
+    autoload :Validator,  "paymill/request/validator"
   end
 
+  class PaymillError < StandardError; end
   class AuthenticationError < PaymillError; end
   class APIError            < PaymillError; end
 
-  class << self
-    def api_key
-      @@api_key
-    end
+  # Returns the set api key
+  #
+  # @return [String] The api key
+  def self.api_key
+    @@api_key
+  end
 
-    def api_key=(api_key)
-      @@api_key = api_key
-    end
+  # Sets the api key
+  #
+  # @param [String] api_key The api key
+  def self.api_key=(api_key)
+    @@api_key = api_key
+  end
 
-    def request(http_method, api_url, data)
-      raise AuthenticationError if api_key.nil?
-
-      https             = Net::HTTP.new(API_BASE, Net::HTTP.https_default_port)
-      https.use_ssl     = true
-      https.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      https.ca_file     = File.join(File.dirname(__FILE__), "data/paymill.crt")
-      https.start do |connection|
-        if api_url == "refunds"
-          url = "/#{API_VERSION}/#{api_url}/#{data[:id]}"
-          data.delete(:id)
-        else
-          url = "/#{API_VERSION}/#{api_url}"
-        end
-        https_request = case http_method
-                        when :post
-                          Net::HTTP::Post.new(url)
-                        when :put
-                          Net::HTTP::Put.new(url)
-                        when :delete
-                          Net::HTTP::Delete.new(url)
-                        else
-                          Net::HTTP::Get.new(path_with_params(url, data))
-                        end
-        https_request.basic_auth(api_key, "")
-        https_request.set_form_data(data) if [:post, :put].include? http_method
-        @response = https.request(https_request)
-      end
-      raise AuthenticationError if @response.code.to_i == 401
-      raise APIError if @response.code.to_i >= 500
-
-      data = JSON.parse(@response.body)
-      raise APIError.new(data["error"]) if data["error"]
-
-      data
-    end
-
-    def path_with_params(path, params)
-      unless params.empty?
-        encoded_params = URI.encode_www_form(params)
-        [path, encoded_params].join("?")
-      else
-        path
-      end
-    end
+  # Makes a request against the Paymill API
+  #
+  # @param [Symbol] http_method The http method to use, must be one of :get, :post, :put and :delete
+  # @param [String] api_url The API url to use
+  # @param [Hash] data The data to send, e.g. used when creating new objects.
+  # @return [Array] The parsed JSON response.
+  def self.request(http_method, api_url, data)
+    info = Request::Info.new(http_method, api_url, data)
+    Request::Base.new(info).perform
   end
 end

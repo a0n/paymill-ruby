@@ -3,6 +3,14 @@ Paymill [![Build Status](https://secure.travis-ci.org/dkd/paymill-ruby.png)](htt
 
 This is a Ruby wrapper for Paymill's API.
 
+Documentation
+=====
+
+We use RubyDoc for documentation.
+
+The documentation of the current release can be found here:
+http://rubydoc.info/gems/paymill/frames/index
+
 Usage
 ======
 
@@ -18,7 +26,12 @@ Then you have to set your API key:
 
     Paymill.api_key = "your-api-key"
 
-Now you can e.g. create a new client:
+Clients
+-------
+
+*[Paymill documentation on clients](https://www.paymill.com/en-gb/documentation-3/reference/api-reference/#clients)*
+
+Creating a new client:
 
     Paymill::Client.create(email: "stefan.sprenger@dkd.de", description: "He is a Ruby guy.")
 
@@ -49,6 +62,105 @@ belonging to a client you can use the following code:
 
 Please note that Transactions and Payments cannot be updated.
 
+Payments
+-------
+
+*[Paymill documentation on payments](https://www.paymill.com/en-gb/documentation-3/reference/api-reference/#document-payments)*
+
+Creating a new credit card payment:
+
+    Paymill::Payment.create(token: "098f6bcd4621d373cade4e832627b4f6")
+
+Creating a new debit card payment:
+
+    Paymill::Payment.create(type: "debit", code: "12345678", account: "1234512345", holder: "Max Mustermann")
+
+Or finding an existing payment:
+
+    Paymill::Payment.find("pay_3af44644dd6d25c820a8")
+
+Deleting a payment:
+
+    Paymill::Payment.delete("pay_3af44644dd6d25c820a8")
+
+
+For retrieving a collection of all payments you might use the `all`
+operation:
+
+    Paymill::Payment.all
+
+Offers
+------
+
+*[Paymill documentation on offers](https://www.paymill.com/en-gb/documentation-3/reference/api-reference/#offers)*
+
+Creating a new offer:
+
+    Paymill::Offer.create(name: "Monthly", interval: "1 month", amount: 1000, currency: "GBP", trial_period_days: 0)
+
+Updating an offer (works on an Offer instance and only the name can be changed):
+
+    offer = Paymill::Offer.find("offer_08064e30032afa3aa046")
+    offer.update_attributes(name: "New name")
+
+Deleting an offer:
+
+    Paymill::Offer.delete('offer_08064e30032afa3aa046')
+
+Retrieving an offer:
+
+    Paymill::Offer.find("offer_753480df39aeb114f2f3")
+
+Retrieving all offers:
+
+    Paymill::Offer.all
+
+
+Webhooks
+------
+
+*[Paymill documentation on webhooks](https://www.paymill.com/en-gb/documentation-3/reference/api-reference/#webhooks)*
+
+Creating a new webhook:
+
+    Paymill::Webhook.create(email: "email@bob.com", event_types: ["transaction.succeeded", "subscription.succeeded"])
+
+Updating a webhook works on an instance (url/email and the event types can be changed):
+
+    hook = Paymill::Webhook.find("hook_940143bcdc0c40e7756f")
+    hook.update_attributes(email: "bob@email.com")
+
+Deleting a webhook:
+
+    Paymill::Webhook.delete("hook_940143bcdc0c40e7756f")
+
+Retrieving a webhook:
+
+    hook = Paymill::Webhook.find("hook_940143bcdc0c40e7756f")
+
+Retrieving all webhooks:
+
+    Paymill::Webhook.all
+
+
+Refunds
+------
+
+*[Paymill documentation on refunds](https://www.paymill.com/en-gb/documentation-3/reference/api-reference/#refunds)*
+
+Creating a new refund:
+
+    Paymill::Refund.create(id: "tran_023d3b5769321c649435", amount: 4200)
+
+Retrieving a refund:
+
+    refund = Paymill::Refund.find("refund_87bc404a95d5ce616049")
+
+Retrieving all refunds:
+
+    Paymill::Refund.all
+
+
 Requirements
 =====
 
@@ -73,4 +185,4 @@ Note on Patches/Pull Requests
 Copyright
 ======
 
-Copyright (c) 2012 dkd Internet Service GmbH, Stefan Sprenger. See LICENSE for details.
+Copyright (c) 2012-2013 dkd Internet Service GmbH, Stefan Sprenger. See LICENSE for details.

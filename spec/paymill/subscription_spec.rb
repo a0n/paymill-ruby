@@ -3,17 +3,21 @@ require "spec_helper"
 describe Paymill::Subscription do
   let(:valid_attributes) do
     {
-      plan:                 {
+      offer:                {
         name:     "Nerd special",
         amount:   123,
         interval: "week"
       },
       livemode:             false,
+      next_capture_at:      1349945681,
       trial_start:          1349945681,
       trial_end:            1349945682,
       cancel_at_period_end: false,
       client:               {
         email: "stefan.sprenger@dkd.de"
+      },
+      payment:              {
+        id: "pay_3af44644dd6d25c820a8",
       }
     }
   end
@@ -24,12 +28,13 @@ describe Paymill::Subscription do
 
   describe "#initialize" do
     it "initializes all attributes correctly" do
-      subscription.plan[:name].should eql("Nerd special")
-      subscription.plan[:amount].should eql(123)
-      subscription.plan[:interval].should eql("week")
+      subscription.offer[:name].should eql("Nerd special")
+      subscription.offer[:amount].should eql(123)
+      subscription.offer[:interval].should eql("week")
       subscription.livemode.should be_false
       subscription.cancel_at_period_end.should be_false
       subscription.client[:email].should eql("stefan.sprenger@dkd.de")
+      subscription.payment[:id].should eql("pay_3af44644dd6d25c820a8")
       subscription.trial_start.to_i.should eql(1349945681)
       subscription.trial_end.to_i.should eql(1349945682)
     end
@@ -54,6 +59,13 @@ describe Paymill::Subscription do
       it "creates a Time object" do
         subscription = Paymill::Subscription.new(trial_end: 1362823928)
         subscription.trial_end.class.should eql(Time)
+      end
+    end
+
+    context "given #next_capture_at is present" do
+      it "creates a Time object" do
+        subscription = Paymill::Subscription.new(next_capture_at: 1362823928)
+        subscription.next_capture_at.class.should eql(Time)
       end
     end
   end
@@ -86,10 +98,17 @@ describe Paymill::Subscription do
     end
   end
 
+  describe ".update_attributes" do
+    it "makes a new PUT request using the correct API endpoint" do
+      Paymill.should_receive(:request).with(:put, "subscriptions/sub_123", {:offer => 50 }).and_return("data" => {})
+      Paymill::Subscription.update_attributes("sub_123", {:offer => 50 })
+    end
+  end
+
   describe "#update_attributes" do
     it "makes a new PUT request using the correct API endpoint" do
       changed_attributes = {:cancel_at_period_end => true}
-      subscription.id    = 'sub_123'
+      subscription.id    = "sub_123"
 
       Paymill.should_receive(:request).with(:put, "subscriptions/sub_123", changed_attributes).and_return("data" => changed_attributes)
 
